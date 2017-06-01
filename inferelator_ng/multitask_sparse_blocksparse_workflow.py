@@ -17,17 +17,17 @@ from time import localtime, strftime
 class MTL_SBS_Workflow(WorkflowBase):
 
     # Common configuration parameters
-    input_dir = "data"
+    input_dir = 'data'
     expression_filelist = ['expression_matrix_file.tsv', 'expression_matrix_file.tsv']
-    tf_names_file = "tf_names.tsv"
-    target_genes_file = "target_genes.tsv"
-    outdir = ""
-    cluster_id = ""
+    tf_names_file = 'tf_names.tsv'
+    target_genes_file = 'target_genes.tsv'
+    outdir = 'output'
+    n_tasks = 2
     workflow_objs = []
-    task_count = 2
     meta_data_filelist = None
     priors_filelist = None
     gold_standard_filelist = None
+    cluster_id = None
 
 
     def run(self):
@@ -44,28 +44,25 @@ class MTL_SBS_Workflow(WorkflowBase):
         print('Calculating betas using Multitask Dirty Model')
         print(strftime("%Y-%m-%d %H:%M:%S", localtime()))
 
-        betas = [[] for k in range(self.task_count)]
-        rescaled_betas = [[] for k in range(self.task_count)]
+        betas = [[] for k in range(self.n_tasks)]
+        rescaled_betas = [[] for k in range(self.n_tasks)]
 
         for idx, bootstrap in enumerate(self.multitask_get_bootstraps()):
             print('Bootstrap {} of {}'.format((idx + 1), self.num_bootstraps))
             X = []
             Y = []
-            for k in range(self.task_count):
+            for k in range(self.n_tasks):
                 task_workflow_obj = self.workflow_objs[k]
                 X.append(task_workflow_obj.activity.ix[:, bootstrap[k]].transpose())
                 Y.append(task_workflow_obj.response.ix[:, bootstrap[k]].transpose())
-                #X.append(task_workflow_obj.activity.transpose())
-                #Y.append(task_workflow_obj.response.transpose())
 
-            self.regression_method.task_count = self.task_count
+            self.regression_method.n_tasks = self.n_tasks
             self.regression_method.feature_count = len(self.tf_names)
             current_betas, current_rescaled_betas = self.regression_method.run(X, Y,
                                                                                self.target_genes,
-                                                                               self.tf_names)#,
-                                                                               #5, 'serial',
-                                                                               #self.cluster_id)
-            for k in range(self.task_count):
+                                                                               self.tf_names,
+                                                                               self.cluster_id)
+            for k in range(self.n_tasks):
                 betas[k].append(current_betas[k])
                 rescaled_betas[k].append(current_rescaled_betas[k])
 
@@ -80,17 +77,17 @@ class MTL_SBS_Workflow(WorkflowBase):
         Reads in input files and compute common data (design, response, priors...)
         """
         if self.meta_data_filelist is None:
-            self.meta_data_filelist = ['metadata_dummy.tsv']*self.task_count
+            self.meta_data_filelist = ['metadata_dummy.tsv']*self.n_tasks
 
         if self.priors_filelist is None:
-            self.priors_filelist = ['prior_dummy.tsv']*self.task_count
+            self.priors_filelist = ['prior_dummy.tsv']*self.n_tasks
 
         if self.gold_standard_filelist is None:
-            self.gold_standard_filelist = ['gs_dummy.tsv']*self.task_count
+            self.gold_standard_filelist = ['gs_dummy.tsv']*self.n_tasks
 
         workflow_objs = []
 
-        for k in range(self.task_count):
+        for k in range(self.n_tasks):
             task_workflow_obj = WorkflowBase()
             task_workflow_obj.input_dir = self.input_dir
             task_workflow_obj.delTmax = self.delTmax
@@ -119,7 +116,7 @@ class MTL_SBS_Workflow(WorkflowBase):
         """
         Compute Transcription Factor Activity
         """
-        for k in range(self.task_count):
+        for k in range(self.n_tasks):
             print('Computing Transcription Factor Activity for Task ' + str(k))
             TFA_calculator = TFA(self.workflow_objs[k].priors_data, self.workflow_objs[k].design, self.workflow_objs[k].half_tau_response)
             self.workflow_objs[k].activity = TFA_calculator.compute_transcription_factor_activity()
@@ -134,7 +131,7 @@ class MTL_SBS_Workflow(WorkflowBase):
 
         for boot in range(self.num_bootstraps):
             bootstrap = []
-            for k in range(self.task_count):
+            for k in range(self.n_tasks):
                 task_workflow_obj = self.workflow_objs[k]
                 col_range = range(task_workflow_obj.response.shape[1])
                 bootstrap.append([np.random.choice(col_range) for x in col_range])
@@ -147,7 +144,7 @@ class MTL_SBS_Workflow(WorkflowBase):
         """
         Output result report(s) for workflow run.
         """
-        for k in range(self.task_count):
+        for k in range(self.n_tasks):
             task_workflow_obj = self.workflow_objs[k]
             output_dir = os.path.join(self.input_dir, self.outdir, ''.join(['task', str(k)]))
             os.makedirs(output_dir)

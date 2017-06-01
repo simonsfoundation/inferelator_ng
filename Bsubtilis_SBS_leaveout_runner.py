@@ -1,7 +1,6 @@
-import arparse
-from inferelator_ng.multitask_sparse_blocksparse_workflow import MTL_SBS_Workflow
 
-workflow = MTL_SBS_Workflow()
+from inferelator_ng.multitask_sparse_blocksparse_workflow import MTL_SBS_Workflow
+import argparse
 
 parser = argparse.ArgumentParser(description = 'run MTL Bsubtilis reps with ipcluster -- ipyparallel')
 parser.add_argument('-cid','--cluster_id', help = 'cluster id for ipcluster', required = False, default = '')
@@ -20,10 +19,11 @@ workflow.tf_names_file = 'tf_names_MTL.tsv'
 workflow.delTmax = 60
 workflow.delTmin = 15
 workflow.tau = 15
+workflow.n_tasks = 2
 workflow.num_bootstraps = 20
 workflow.cluster_id = cluster_id
 workflow.priors_filelist = [''.join(['prior_gs_splits/prior_', str(idx), '.tsv'])]*2
 workflow.gold_standard_filelist = ['gold_standard.tsv', 'gold_standard.tsv']
-workflow.outdir = ''.join(['MTL_SBSebic_output/replicate_', str(idx)])
+workflow.outdir = ''.join(['MTL-SBS-ebic_leaveOut_output/replicate_', str(idx)])
 workflow.run()
 

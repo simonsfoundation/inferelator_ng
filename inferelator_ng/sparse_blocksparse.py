@@ -5,7 +5,6 @@ from scipy.misc import comb
 from scipy.optimize import minimize
 from sklearn.preprocessing import StandardScaler
 from sklearn.linear_model import LinearRegression
-#from joblib import Parallel, delayed
 
 
 class MT_SBS_OneGene:
@@ -193,13 +192,11 @@ class MT_SBS_regression:
         return(out)
 
 
-    def run(self, design, response, targets, regulators, cluster_id = '', prior = None):
+    def run(self, design, response, targets, regulators, cluster_id = None, prior = None):
         '''
 
         '''
         #targets = ['BSU02100', 'BSU05340', 'BSU24010', 'BSU24040'] # test
-        #targets = ['BSU02100'] #BSU24010
-        #targets = targets[:50]
         results = []
         args_list = []
 
@@ -243,8 +240,9 @@ class MT_SBS_regression:
                 try:
                     results_k.append(res[k])
                 except:
-                    print(gene)
-                    print('no results for task {}'.format(k))
+                    pass
+                    #print(gene)
+                    #print('no results for task {}'.format(k))
 
             results_k = pd.concat(results_k)
             weights_k = self.format_weights(results_k, 'weights', targets, regulators)
@@ -396,7 +394,6 @@ def run_regression_EBIC_SS(args):
         if nonzero.sum() > 0:
             cTFs = np.asarray(TFs)[outW[:,k] != 0]
             output[k] = final_weights(X[k][:, nonzero], Y[k], cTFs, gene)
-            print(output[k].sort_values('resc_weights'))
     output['gene'] = gene
 
     return(output)
