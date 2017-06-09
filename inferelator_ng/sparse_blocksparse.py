@@ -276,7 +276,8 @@ def ebic(X, Y, W, n_tasks, n_samples, n_preds, gamma = 1):
         RSS = sum_squared_erros(X, Y, W, k)
         BIC_penalty = nonzero_pred * np.log(n)
         BIC_extension = 2 * gamma * np.log(comb(n_preds, nonzero_pred))
-        EBIC.append((n * np.log(RSS/n)) + BIC_penalty + BIC_extension)
+        #EBIC.append((n * np.log(RSS/n)) + BIC_penalty + BIC_extension)
+        EBIC.append((RSS + BIC_penalty + BIC_extension)/n)
 
     EBIC = np.mean(EBIC)
 
@@ -331,8 +332,8 @@ def run_regression_EBIC_SS(args):
     n_samples = [X[k].shape[0] for k in range(n_tasks)]
 
     ###### EBIC ######
-    Cs = np.logspace(np.log10(0.01), np.log10(10), 10)[::-1]
-    Ss = np.linspace(0.51, 0.99, 5)[::-1]
+    Cs = np.logspace(np.log10(0.01), np.log10(10), 20)[::-1]
+    Ss = np.linspace(0.51, 0.99, 10)[::-1]
     lamBparam = np.sqrt((n_tasks * np.log(n_preds))/np.mean(n_samples))
 
     model = MT_SBS_OneGene(n_tasks, n_preds)
