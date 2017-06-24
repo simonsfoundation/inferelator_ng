@@ -276,8 +276,8 @@ def ebic(X, Y, W, n_tasks, n_samples, n_preds, gamma = 1):
         RSS = sum_squared_erros(X, Y, W, k)
         BIC_penalty = nonzero_pred * np.log(n)
         BIC_extension = 2 * gamma * np.log(comb(n_preds, nonzero_pred))
-        #EBIC.append((n * np.log(RSS/n)) + BIC_penalty + BIC_extension)
-        EBIC.append((RSS + BIC_penalty + BIC_extension)/n)
+        EBIC.append((n * np.log(RSS/n)) + BIC_penalty + BIC_extension)
+        #EBIC.append((RSS + BIC_penalty + BIC_extension)/n)
 
     EBIC = np.mean(EBIC)
 
