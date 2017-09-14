@@ -8,6 +8,6 @@ workflow.num_bootstraps = 2
 workflow.delTmax = 110
 workflow.delTmin = 0
 workflow.tau = 45
-workflow.random_seed = 0001
-workflow.run() 
+workflow.random_seed = 1
+workflow.run()
 

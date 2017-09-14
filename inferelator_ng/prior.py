@@ -1,5 +1,6 @@
 import pybedtools
 import pandas as pd
+import numpy as np
 
 class Prior:
 
@@ -11,12 +12,12 @@ class Prior:
     genes_file: path/to/genes BED format (TSS or gene body)
     targets: list of target genes
     regulators: list of regulators
-    mode: closest (find closest target gene for each motif) 
+    mode: closest (find closest target gene for each motif)
           window (finds motifs within a window of target gene feature)
     max_distance: maximum distance allowed for an assignment motif --> gene to be valid
-    ignore_downstream: valid for closest mode only; 
+    ignore_downstream: valid for closest mode only;
                        motifs can only be assigned to target gene if upstream (true in yeast, for example)
-    number_of_targets: valid for closest mode only; 
+    number_of_targets: valid for closest mode only;
                        allow a motif to regulate 'number_of_targets' closest genes
     """
 
@@ -40,60 +41,49 @@ class Prior:
         TFs (columns) and target genes (rows) - weights are set as the number of motifs associated with interaction
         Possibility of dumping motifs associated with a particular edge (?)
         """
-
         # Reads and sort input BED file
-        motifs = pybedtools.BedTool(self.motifs).sort()
         genes = pybedtools.BedTool(self.genes).sort()
-
-        # Define edges in prior using method defined in self.mode
-        edges = {}
+        motifs = pybedtools.BedTool(self.motifs).sort()#.to_dataframe()
 
         # For each motif, find closest gene within a certain window (self.max_distance) and that a prior interaction
         if self.mode == 'closest':
             # pybedtools wrapper around Bedtools closest function, D reports signed distance between motifs and genes
-            assignments = motifs.closest(genes, D = 'b', k = self.number_of_targets, id = self.ignore_downstream) # id = True, for Yeast! what about k, is it something to optimize?
+            assignments = motifs.closest(genes, D = 'b', k = self.number_of_targets, id = self.ignore_downstream).to_dataframe() # id = True, for Yeast! what about k, is it something to optimize?
+            assignments = assignments.loc[assignments.iloc[:, -1].abs() < self.max_distance, :]
             # get index to retrieve important features later
             motif_start = 0
-            target_idx = motifs.field_count()+3
+            target_idx = motifs.field_count() + 3
 
         # For each target gene, finds motifs within a certain window (self.max_distance) and consider those as interactions in prior
         if self.mode == 'window':
             # pybedtools wrapper around Bedtools window function, w is the window around gene feature to be used
-            assignments = genes.window(motifs, w = self.max_distance)
+            assignments = genes.window(motifs, w = self.max_distance).to_dataframe()
             # get index to retrieve important features later
             motif_start = genes.field_count()
             target_idx = 3
-        
-        motif_end = motif_start + motifs.field_count()-1
-        
-        # Loop over all assignments and define edges
-        for assignment in assignments:
-            # in the closest mode, one can only allow motifs that are within the distance set in max_distance
-            if self.mode == 'closest':
-                if abs(int(assignment[-1])) > self.max_distance:
-                    continue
-            # record edges as well as motifs associated with them
-            assignment = assignment.fields
-            motif = assignment[motif_start:motif_end]
-            regulator = assignment[motif_start+3]
-            target = assignment[target_idx]
 
-            if regulator in edges:
-                if target in edges[regulator]:
-                    edges[regulator][target].append(motif)
-                else:
-                    edges[regulator][target] = [motif]
-            else:
-                edges[regulator] = {target : [motif]}
-    
+        # Find column index for the regulator and target ids
+        regulator = assignments.columns[motif_start+3]
+        target = assignments.columns[target_idx]
+
+        # Count number of motifs associated with each target gene
+        assignments = assignments.groupby([regulator, target]).size().reset_index()
+        assignments.columns = ['regulator', 'target', 'interaction']
+        assignments = assignments.loc[assignments.regulator.isin(self.regulators),:]
+        assignments = assignments.loc[assignments.target.isin(self.targets),:]
+
         # Make prior matrix
-        prior = pd.DataFrame(0, index=self.targets, columns=self.regulators)
-        # If there are multiple motifs for a TF assigned to the same gene, give larger weight to that interaction
-        for regulator in edges:
-            for target in edges[regulator]:
-                if regulator in self.regulators and target in self.targets:
-                    #weight = pybedtools.BedTool(edges[regulator][target]).merge().count()
-                    weight = len(edges[regulator][target])
-                    prior.ix[target, regulator] = weight
+        prior = pd.pivot_table(assignments, index='target', columns='regulator', values='interaction', fill_value=0.)
+        prior = prior.loc[:, self.regulators]; del prior.columns.name
+        prior = prior.loc[self.targets,: ]; del prior.index.name
+        prior.replace(np.nan, 0., inplace=True)
+
         return prior
 
+
+    # motifs_dfs = []
+    # for tf, df in motifs.groupby('name'):
+    #     df = pybedtools.BedTool(df.values.tolist())
+    #     df = df.merge(d=-6, c=4, o=['distinct']).to_dataframe()
+    #     motifs_dfs.append(df)
+    # motifs = pybedtools.BedTool(pd.concat(motifs_dfs).values.tolist()).sort()
