@@ -3,6 +3,7 @@ from .. import prior
 import pandas as pd
 import numpy as np
 import subprocess
+import pandas.util.testing as pdt
 
 class TestPrior(unittest.TestCase):
 
@@ -43,7 +44,7 @@ class TestPrior(unittest.TestCase):
                                        [0, 0, 0, 0]],
                                        index = ['gene1', 'gene2', 'gene3'],
                                        columns = ['TF1', 'TF2', 'TF3', 'TF4'])
-        self.assertTrue(prior_object.make_prior().equals(expected_prior))
+        pdt.assert_frame_equal(prior_object.make_prior(), expected_prior)
 
 
     def test_prior_closest_zero_distance_genes_with_multiple_tss_at_different_locations(self):
@@ -59,7 +60,7 @@ class TestPrior(unittest.TestCase):
                                        [0, 0, 0, 0]],
                                        index = ['gene1', 'gene2', 'gene3'],
                                        columns = ['TF1', 'TF2', 'TF3', 'TF4'])
-        self.assertTrue(prior_object.make_prior().equals(expected_prior))
+        pdt.assert_frame_equal(prior_object.make_prior(), expected_prior)
 
     def test_prior_closest_zero_distance_genes_with_multiple_tss_at_same_location(self):
         self.setup_test_files()
@@ -74,7 +75,7 @@ class TestPrior(unittest.TestCase):
                                        [0, 0, 0, 0]],
                                        index = ['gene1', 'gene2', 'gene3'],
                                        columns = ['TF1', 'TF2', 'TF3', 'TF4'])
-        self.assertTrue(prior_object.make_prior().equals(expected_prior))
+        pdt.assert_frame_equal(prior_object.make_prior(), expected_prior)
 
     def test_prior_window_TSS_zero_distance(self):
         self.setup_test_files()
@@ -89,7 +90,7 @@ class TestPrior(unittest.TestCase):
                                        [0, 0, 0, 0]],
                                        index = ['gene1', 'gene2', 'gene3'],
                                        columns = ['TF1', 'TF2', 'TF3', 'TF4'])
-        self.assertTrue(prior_object.make_prior().equals(expected_prior))
+        pdt.assert_frame_equal(prior_object.make_prior(), expected_prior)
 
     def test_prior_window_geneBody_zero_distance(self):
         self.setup_test_files()
@@ -103,7 +104,7 @@ class TestPrior(unittest.TestCase):
                                        [0, 0, 0, 0]],
                                        index = ['gene1', 'gene2', 'gene3'],
                                        columns = ['TF1', 'TF2', 'TF3', 'TF4'])
-        self.assertTrue(prior_object.make_prior().equals(expected_prior))
+        pdt.assert_frame_equal(prior_object.make_prior(), expected_prior)
 
 
     def test_prior_closestTSS_default(self):
@@ -118,7 +119,7 @@ class TestPrior(unittest.TestCase):
                                        [0, 1, 1, 1]],
                                        index = ['gene1', 'gene2', 'gene3'],
                                        columns = ['TF1', 'TF2', 'TF3', 'TF4'])
-        self.assertTrue(prior_object.make_prior().equals(expected_prior))
+        pdt.assert_frame_equal(prior_object.make_prior(), expected_prior)
 
     def test_prior_closestTSS_ignore_downstream(self):
         self.setup_test_files()
@@ -132,7 +133,7 @@ class TestPrior(unittest.TestCase):
                                        [0, 1, 1, 0]],
                                        index = ['gene1', 'gene2', 'gene3'],
                                        columns = ['TF1', 'TF2', 'TF3', 'TF4'])
-        self.assertTrue(prior_object.make_prior().equals(expected_prior))
+        pdt.assert_frame_equal(prior_object.make_prior(), expected_prior)
 
 
     def test_prior_windowGeneBody_1000(self):
@@ -147,7 +148,7 @@ class TestPrior(unittest.TestCase):
                                        [2, 1, 1, 1]],
                                        index = ['gene1', 'gene2', 'gene3'],
                                        columns = ['TF1', 'TF2', 'TF3', 'TF4'])
-        self.assertTrue(prior_object.make_prior().equals(expected_prior))
+        pdt.assert_frame_equal(prior_object.make_prior(), expected_prior)
 
     def test_prior_number_of_targets_2(self):
         self.setup_test_files()
@@ -161,4 +162,4 @@ class TestPrior(unittest.TestCase):
                                        [0, 1, 1, 1]],
                                        index = ['gene1', 'gene2', 'gene3'],
                                        columns = ['TF1', 'TF2', 'TF3', 'TF4'])
-        self.assertTrue(prior_object.make_prior().equals(expected_prior))
+        pdt.assert_frame_equal(prior_object.make_prior(), expected_prior)

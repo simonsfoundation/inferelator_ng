@@ -49,7 +49,7 @@ class Prior:
         if self.mode == 'closest':
             # pybedtools wrapper around Bedtools closest function, D reports signed distance between motifs and genes
             assignments = motifs.closest(genes, D = 'b', k = self.number_of_targets, id = self.ignore_downstream).to_dataframe() # id = True, for Yeast! what about k, is it something to optimize?
-            assignments = assignments.loc[assignments.iloc[:, -1].abs() < self.max_distance, :]
+            assignments = assignments.loc[assignments.iloc[:, -1].abs() <= self.max_distance, :]
             # get index to retrieve important features later
             motif_start = 0
             target_idx = motifs.field_count() + 3
@@ -73,9 +73,12 @@ class Prior:
         assignments = assignments.loc[assignments.target.isin(self.targets),:]
 
         # Make prior matrix
-        prior = pd.pivot_table(assignments, index='target', columns='regulator', values='interaction', fill_value=0.)
-        prior = prior.loc[:, self.regulators]#; del prior.columns.name
-        prior = prior.loc[self.targets,: ]#; del prior.index.name
-        prior.replace(np.nan, 0., inplace=True)
-
-        return prior
+        prior = pd.pivot_table(assignments, index='target', columns='regulator', values='interaction', fill_value=0)
+        prior = prior.loc[:, self.regulators]
+        prior = prior.loc[self.targets,: ]
+        if len(prior.columns) > 0:
+            del prior.columns.name
+        if len(prior.index) > 0:
+            del prior.index.name
+        prior.replace(np.nan, 0, inplace=True)
+        return prior.astype(int)
