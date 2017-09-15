@@ -74,16 +74,8 @@ class Prior:
 
         # Make prior matrix
         prior = pd.pivot_table(assignments, index='target', columns='regulator', values='interaction', fill_value=0.)
-        prior = prior.loc[:, self.regulators]; del prior.columns.name
-        prior = prior.loc[self.targets,: ]; del prior.index.name
+        prior = prior.loc[:, self.regulators]#; del prior.columns.name
+        prior = prior.loc[self.targets,: ]#; del prior.index.name
         prior.replace(np.nan, 0., inplace=True)
 
         return prior
-
-
-    # motifs_dfs = []
-    # for tf, df in motifs.groupby('name'):
-    #     df = pybedtools.BedTool(df.values.tolist())
-    #     df = df.merge(d=-6, c=4, o=['distinct']).to_dataframe()
-    #     motifs_dfs.append(df)
-    # motifs = pybedtools.BedTool(pd.concat(motifs_dfs).values.tolist()).sort()
