@@ -20,6 +20,9 @@ class BBSR_TFA_Chromatin_Prior_Workflow(WorkflowBase):
     motifs_file = 'motifs.bed'
     annotation_file = 'tss.bed'
     target_genes_file = 'target_genes.tsv'
+    prior_mode = 'closest'
+    prior_max_distance = float('Inf')
+    prior_ignore_downstream = True
     output_dir = datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
 
     def run(self):
@@ -74,8 +77,7 @@ class BBSR_TFA_Chromatin_Prior_Workflow(WorkflowBase):
     def build_prior(self):
         print('Generating Prior Matrix from input Motifs and Annotation ... ')
         prior_generator = Prior(self.input_file(self.motifs_file), self.input_file(self.annotation_file), self.target_genes, self.tf_names,
-                                mode = 'closest', max_distance = float('Inf'), ignore_downstream = True)
-        #self.priors_data = prior_generator.make_prior()
+                                mode = self.prior_mode, max_distance = self.prior_max_distance, ignore_downstream = self.prior_ignore_downstream)
         self.priors_data = prior_generator.make_prior()
 
     def compute_activity(self):
