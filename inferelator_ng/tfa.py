@@ -48,7 +48,6 @@ class TFA:
         activity = pd.DataFrame(self.expression_matrix.loc[self.prior.columns,:].values,
                 index = self.prior.columns,
                 columns = self.expression_matrix.columns)
-
         # Find all non-zero TFs that are duplicates of any other non-zero tfs
         is_duplicated = self.prior[non_zero_tfs].transpose().duplicated(keep=False)
         duplicates = is_duplicated[is_duplicated].index.tolist()
@@ -69,6 +68,7 @@ class TFA:
         if non_zero_tfs:
             activity.loc[non_zero_tfs,:] = np.matrix(linalg.pinv2(self.prior[non_zero_tfs])) * np.matrix(self.expression_matrix_halftau)
 
+        activity.to_csv('activity.tsv', sep='\t')
         return activity
 
             
