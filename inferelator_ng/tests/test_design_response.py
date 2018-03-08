@@ -171,7 +171,16 @@ class TestDRBelowDeltMin(TestDR):
         expression_3 = np.array(list(self.exp['ts3']))
         expected_response_1 = expression_1 + self.tau * (expression_3 - expression_1) /  (float(self.meta['del.t'][1]) + float(self.meta['del.t'][2]))
         np.testing.assert_almost_equal(np.array(resp['ts1']), expected_response_1)
-        #pdb.set_trace()
+
+    def test_response_matrix_below_big_delt_min(self):
+        self.delT_min = 8
+        self.delT_max = 10
+        self.calculate_design_and_response()
+        ds, resp = (self.design, self.response)
+        expression_1 = np.array(list(self.exp['ts1']))
+        expression_3 = np.array(list(self.exp['ts3']))
+        expected_response_1 = expression_1 + self.tau * (expression_3 - expression_1) /  (float(self.meta['del.t'][1]) + float(self.meta['del.t'][2]))
+        np.testing.assert_almost_equal(np.array(resp['ts1']), expected_response_1)
 
     @unittest.skip("skipping until we've determined if we want to modify the legacy R code")
     def test_design_matrix_headers_below_delt_min(self):
