@@ -4,7 +4,7 @@ import pandas as pd
 import numpy as np
 import subprocess
 
-units_in_the_last_place_tolerance = 15
+units_in_the_last_place_tolerance = 3
 class TestTFA(unittest.TestCase):
 
     def generate_random_matrix(self, n, m):
@@ -144,6 +144,7 @@ class TestTFA(unittest.TestCase):
                 [-1.257265, -1.611675, -1.348145, -1.196210, -1.35857],
                 [1.706100, 1.765225, 1.739675, 1.791075, 1.70055]]),
             atol=1e-15)
+
         # Assert the final priors matrix has no self- interactions
         np.testing.assert_equal(self.tfa_object.prior.values, np.array([[1,0,0,1], 
             [0,0,0,0], 
