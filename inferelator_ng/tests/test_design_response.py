@@ -179,7 +179,9 @@ class TestDRBelowDeltMin(TestDR):
         ds, resp = (self.design, self.response)
         expression_1 = np.array(list(self.exp['ts1']))
         expression_3 = np.array(list(self.exp['ts3']))
-        expected_response_1 = expression_1 + self.tau * (expression_3 - expression_1) /  (float(self.meta['del.t'][1]) + float(self.meta['del.t'][2]))
+        # Because none of the time series columns after the first were within delT_min of the first, even when summed,
+        # we expect the response to equal the original time series ts1: [1, 6]
+        expected_response_1 = expression_1
         np.testing.assert_almost_equal(np.array(resp['ts1']), expected_response_1)
 
     @unittest.skip("skipping until we've determined if we want to modify the legacy R code")

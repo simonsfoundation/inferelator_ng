@@ -63,7 +63,7 @@ def kvsTearDown(kvs, rank):
         kvs.get('count')
 
 def get_all_except(l, idx):
-    return l[:idx] + l[idx+1:]
+    return l[:idx] + l[idx + 1:]
 
 class RDriver:
     """

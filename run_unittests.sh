@@ -13,4 +13,4 @@ fi
 
 export PYTHONPATH=$PYTHONPATH:$LOCALREPO
 
-python $LOCALREPO/kvsstcp.py --execcmd "nosetests -v"
+python $LOCALREPO/kvsstcp.py --execcmd "nosetests -v --nocapture"

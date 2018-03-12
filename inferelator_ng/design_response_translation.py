@@ -85,7 +85,7 @@ class PythonDRDriver:
                     # sum_delt_list = [float(off_fol_delt[0]) + float(following_delt[off[0]])]
                 following= utils.get_all_except(following, next_cond) + off_fol
                 following_delt = utils.get_all_except(following_delt, next_cond) + sum_delt_list
-                off = list(np.where(following_delt < delTmin)[0]) 
+                off = list(np.where(np.array(following_delt) < delTmin)[0])
 
             n = len(following)
             cntr = 0
