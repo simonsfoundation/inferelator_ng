@@ -10,6 +10,9 @@ class PythonDRDriver:
     def __init__(self):
         pass
 
+    def get_following_conditions(self, current):
+        return list(np.where(self.list_of_previouses.str.contains(current)==True)[0])
+
     def run(self, expression_mat, metadata_dataframe):
 
         meta_data = metadata_dataframe.copy()
@@ -34,6 +37,7 @@ class PythonDRDriver:
 
         cond = meta_data['condName'].copy()
         prev = meta_data['prevCol'].copy()
+        self.list_of_previouses = prev
         delt = meta_data['del.t'].copy()
         delTmin = self.delTmin
         delTmax = self.delTmax
@@ -58,24 +62,30 @@ class PythonDRDriver:
         steady = prev.isnull() & ~(cond_n_na.isin(prev.replace(np.nan,"NA")))
 
         des_mat=pd.DataFrame(exp_mat[cond[steady]])
-        res_mat=pd.DataFrame(exp_mat[cond[steady]])
-
+        res_mat=pd.DataFrame(exp_mat[cond[steady]]) 
 
         for i in list(np.where(~steady)[0]):
-            following = list(np.where(prev.str.contains(cond[i])==True)[0])
+            following = self.get_following_conditions(cond[i])
             following_delt = list(delt[following])
 
-            try:
+            # We considered changing the off (which stands for following of the following) list to global indices
+            # However, we need local indices to access following_delt
+            off = []
+            if len(following_delt) > 0:
                 off = list(np.where(following_delt[0] < delTmin)[0])
-            except:
-                off = []
 
             while len(off)>0:
-                off_fol = list(np.where(prev.str.contains(cond[following[off[0]]])==True)[0])
-                off_fol_delt = list(delt[off_fol])
-                following=following[:off[0]] + following[off[0]+1:] + off_fol
-                following_delt = following_delt[:off[0]] + following_delt[off[0]+1:]+[float(off_fol_delt[0]) + float(following_delt[off[0]])]
-                off = list(np.where(following_delt < [delTmin])[0])
+                next_cond = off[0]
+                off_fol = self.get_following_conditions(cond[following[next_cond]])
+                if len(off_fol) == 0:
+                    sum_delt_list = []
+                else:
+                    # Use numpy array to braodcast addition across all members of off_fol
+                    sum_delt_list = [np.array(delt[off_fol]) + float(following_delt[next_cond])]
+                    # sum_delt_list = [float(off_fol_delt[0]) + float(following_delt[off[0]])]
+                following= utils.get_all_except(following, next_cond) + off_fol
+                following_delt = utils.get_all_except(following_delt, next_cond) + sum_delt_list
+                off = list(np.where(following_delt < delTmin)[0]) 
 
             n = len(following)
             cntr = 0

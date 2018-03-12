@@ -62,6 +62,9 @@ def kvsTearDown(kvs, rank):
         # Do a hard reset if rank == 0                                                                                                       
         kvs.get('count')
 
+def get_all_except(l, idx):
+    return l[:idx] + l[idx+1:]
+
 class RDriver:
     """
     Superclass for R driver objects.
