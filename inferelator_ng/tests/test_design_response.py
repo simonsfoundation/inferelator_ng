@@ -200,8 +200,7 @@ class TestDRBelowDeltMin(TestDR):
         expected_response_1 = expression_1 + self.tau * (expression_3 - expression_1) /  (float(self.meta['del.t'][1]) + float(self.meta['del.t'][2]))
         expected_response_2 = expression_1 + self.tau * (expression_4 - expression_1) /  (float(self.meta['del.t'][1]) + float(self.meta['del.t'][3]))
         expected_response_3 = expression_2 + self.tau * (expression_4 - expression_2) /  (float(self.meta['del.t'][3]))
-        # Because none of the time series columns after the first were within delT_min of the first, even when summed,
-        # we expect the response to equal the original time series ts1: [1, 6]
+
         np.testing.assert_almost_equal(np.array(resp['ts1_dupl01']), expected_response_1)
         np.testing.assert_almost_equal(np.array(resp['ts1_dupl02']), expected_response_2)
         np.testing.assert_almost_equal(np.array(resp['ts2']), expected_response_3)
@@ -223,8 +222,7 @@ class TestDRBelowDeltMin(TestDR):
         expected_response_2 = expression_1 + self.tau * (expression_4 - expression_1) /  (float(self.meta['del.t'][1]) + float(self.meta['del.t'][3]))
         expected_response_3 = expression_2 + self.tau * (expression_3 - expression_2) /  (float(self.meta['del.t'][2]))
         expected_response_4 = expression_2 + self.tau * (expression_4 - expression_2) /  (float(self.meta['del.t'][3]))
-        # Because none of the time series columns after the first were within delT_min of the first, even when summed,
-        # we expect the response to equal the original time series ts1: [1, 6]
+
         np.testing.assert_almost_equal(np.array(resp['ts1_dupl01']), expected_response_1)
         np.testing.assert_almost_equal(np.array(resp['ts1_dupl02']), expected_response_2)
         np.testing.assert_almost_equal(np.array(resp['ts2_dupl01']), expected_response_3)
@@ -234,7 +232,7 @@ class TestDRBelowDeltMin(TestDR):
     def test_splitting_tree_response_3_branches(self):
         self.delT_min = 1
         self.meta['del.t'] = ['NA', 2, 2, 2, 'NA']
-        # Set time series condition 2 to split to ts3 and ts4
+        # Set time series condition 1 to split to ts2, ts3 and ts4
         self.meta['prevCol'] = ['NA','ts1','ts1','ts1', 'NA']
         self.delT_max = 10
         self.calculate_design_and_response()
@@ -246,8 +244,7 @@ class TestDRBelowDeltMin(TestDR):
         expected_response_0 = expression_1 + self.tau * (expression_2 - expression_1) /  (float(self.meta['del.t'][1]))
         expected_response_1 = expression_1 + self.tau * (expression_3 - expression_1) /  (float(self.meta['del.t'][1]))
         expected_response_2 = expression_1 + self.tau * (expression_4 - expression_1) /  (float(self.meta['del.t'][1]))
-        # Because none of the time series columns after the first were within delT_min of the first, even when summed,
-        # we expect the response to equal the original time series ts1: [1, 6]
+
         np.testing.assert_almost_equal(np.array(resp['ts1_dupl01']), expected_response_0)
         np.testing.assert_almost_equal(np.array(resp['ts1_dupl02']), expected_response_1)
         np.testing.assert_almost_equal(np.array(resp['ts1_dupl03']), expected_response_2)
