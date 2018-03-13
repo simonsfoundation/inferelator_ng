@@ -46,6 +46,7 @@ class PythonDRDriver:
         delt.loc[delt > delTmax] = np.nan
         not_in_mat=set(cond)-set(exp_mat)
         cond_dup = cond.duplicated()
+
         if len(not_in_mat) > 0:
             cond = cond.str.replace('[/+-]', '.')
             prev = cond.str.replace('[/+-]', '.')
@@ -64,59 +65,58 @@ class PythonDRDriver:
         des_mat=pd.DataFrame(exp_mat[cond[steady]])
         res_mat=pd.DataFrame(exp_mat[cond[steady]]) 
 
+        # Construct dictionary of following conditions
+        following_dictionary = {}
         for i in list(np.where(~steady)[0]):
-            following = self.get_following_conditions(cond[i])
+            following_dictionary[i] = self.get_following_conditions(cond[i])
+
+        for i in list(np.where(~steady)[0]):
+            following = following_dictionary[i]
             following_delt = list(delt[following])
 
-            # We considered changing the off (which stands for following of the following) list to global indices
-            # However, we need local indices to access following_delt
-            off = []
+            # Create a list of local indices to access following_delt,
+            # which is a dynamic list with values that need to be recomputed for each i
+            following_under_delt = []
             if len(following_delt) > 0:
-                off = list(np.where(following_delt[0] < delTmin)[0])
+                following_under_delt = list(np.where(following_delt[0] < delTmin)[0])
 
-            while len(off)>0:
-                next_cond = off[0]
-                off_fol = self.get_following_conditions(cond[following[next_cond]])
-                if len(off_fol) == 0:
+            while len(following_under_delt) > 0:
+                current = following_under_delt[0]
+                following_current = following_dictionary[following[current]]
+                if len(following_current) == 0:
                     sum_delt_list = []
                 else:
-                    # Use numpy array to braodcast addition across all members of off_fol
-                    sum_delt_list = [np.array(delt[off_fol]) + float(following_delt[next_cond])]
-                    # sum_delt_list = [float(off_fol_delt[0]) + float(following_delt[off[0]])]
-                following= utils.get_all_except(following, next_cond) + off_fol
-                following_delt = utils.get_all_except(following_delt, next_cond) + sum_delt_list
-                off = list(np.where(np.array(following_delt) < delTmin)[0])
+                    # Use numpy array to broadcast addition across all branches
+                    sum_delt_list = np.array(delt[following_current]) + float(following_delt[current])
+                # Update the following list to no longer include the current condition
+                # but instead includes the conditions following the current in its place
+                following = utils.get_all_except(following, current) + following_current
+                # Update the following_delt list to no longer include the current condition but replace it 
+                # with a sum of the delt of the conditions following the current summed with its delt
+                following_delt = list(utils.get_all_except(following_delt, current)) + list(sum_delt_list)
+                following_under_delt = list(np.where(np.array(following_delt) < delTmin)[0])
 
-            n = len(following)
-            cntr = 0
+            for (idx, j) in enumerate(following):
+                column_name = cond[i]
+                if len(following) > 1:
+                    column_name = "%s_dupl%02d" % (cond[i], idx+1)
 
-            for j in following:
-                if n>1:
-                    this_cond = "%s_dupl%02d" % (cond[i], cntr+1)
-                    original_this_cond = this_cond
+                    # Handle column name collision with other columns in the expression matrix
+                    original_column_name = column_name
                     k = 1
-                    while this_cond in res_mat.columns :
-                        this_cond = original_this_cond + '.{}'.format(int(k))
+                    while column_name in res_mat.columns :
+                        column_name = original_column_name + '.{}'.format(int(k))
                         k = k + 1
-                else:
-                    this_cond = cond[i]
 
-
-
-                des_tmp = np.concatenate((des_mat.values,exp_mat[cond[i]].values[:,np.newaxis]),axis=1)
-                des_names = list(des_mat.columns)+[this_cond]
-                des_mat=pd.DataFrame(des_tmp,index=des_mat.index,columns=des_names)
-                interp_res = (float(tau)/float(following_delt[cntr])) * (exp_mat[cond[j]].astype('float64') - exp_mat[cond[i]].astype('float64')) + exp_mat[cond[i]].astype('float64')
-                res_tmp = np.concatenate((res_mat.values,interp_res.values[:,np.newaxis]),axis=1)
-                res_names = list(res_mat.columns)+[this_cond] 
-                res_mat=pd.DataFrame(res_tmp,index=res_mat.index,columns=res_names)
-
-                cntr = cntr + 1
+                exp_i = exp_mat[cond[i]]
+                exp_j = exp_mat[cond[j]]
+                des_mat[column_name] = exp_i
+                res_mat[column_name] = tau * (exp_j - exp_i) / following_delt[idx] + exp_i
 
             # special case: nothing is following this condition within delT.min
             # and it is the first of a time series --- treat as steady state
 
-            if n == 0 and prev.isnull()[i]:
+            if len(following) == 0 and prev.isnull()[i]:
 
                 des_mat = pd.concat([des_mat, exp_mat[cond[i]]], axis=1)
                 des_mat.rename(columns={des_mat.columns.values[len(des_mat.columns)-1]:cond[i]}, inplace=True)
@@ -129,8 +129,11 @@ class PythonDRDriver:
 
         special_char_inv_map = {v: k for k, v in list(special_char_dictionary.items())}
         for sch in special_char_inv_map.keys():
-            cols_des_mat=[item.replace(sch, special_char_inv_map[sch]) for item in cols_des_mat]
-            cols_res_mat=[item.replace(sch, special_char_inv_map[sch]) for item in cols_res_mat]
+            try:
+                cols_des_mat=[item.replace(sch, special_char_inv_map[sch]) for item in cols_des_mat]
+                cols_res_mat=[item.replace(sch, special_char_inv_map[sch]) for item in cols_res_mat]
+            except:
+                import pdb; pdb.set_trace()
 
         des_mat.columns=cols_des_mat
         res_mat.columns=cols_res_mat
