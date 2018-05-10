@@ -14,7 +14,6 @@ import datetime
 from kvsstcp.kvsclient import KVSClient
 import pandas as pd
 from . import utils
-import time
 
 # Connect to the key value store service (its location is found via an
 # environment variable that is set when this is started vid kvsstcp.py
@@ -59,7 +58,6 @@ class BBSR_TFA_Workflow(WorkflowBase):
             if rank: continue
             betas.append(current_betas)
             rescaled_betas.append(current_rescaled_betas)
-            kvs.put('bootstrap_{}'.format(idx + 1), 'go')
 
         self.emit_results(betas, rescaled_betas, self.gold_standard, self.priors_data)
 
