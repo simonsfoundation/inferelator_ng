@@ -14,6 +14,7 @@ import datetime
 from kvsstcp.kvsclient import KVSClient
 import pandas as pd
 from . import utils
+import time
 
 # Connect to the key value store service (its location is found via an
 # environment variable that is set when this is started vid kvsstcp.py
@@ -41,16 +42,22 @@ class BBSR_TFA_Workflow(WorkflowBase):
 
         for idx, bootstrap in enumerate(self.get_bootstraps()):
             print('Bootstrap {} of {}'.format((idx + 1), self.num_bootstraps))
+
             X = self.activity.ix[:, bootstrap]
             Y = self.response.ix[:, bootstrap]
             print('Calculating MI, Background MI, and CLR Matrix')
             (self.clr_matrix, self.mi_matrix) = self.mi_clr_driver.run(X, Y)
             print('Calculating betas using BBSR')
+            if 0 == rank:
+                kvs.put('bootstrap %d'%idx, 'This is how we stop workers from moving ahead on a new bootstrap')
+            else:
+                kvs.view('bootstrap %d'%idx)
             ownCheck = utils.ownCheck(kvs, rank, chunk=25)
             current_betas,current_rescaled_betas = self.regression_driver.run(X, Y, self.clr_matrix, self.priors_data,kvs,rank, ownCheck)
             if rank: continue
             betas.append(current_betas)
             rescaled_betas.append(current_rescaled_betas)
+            kvs.put('bootstrap_{}'.format(idx + 1), 'go')
 
         self.emit_results(betas, rescaled_betas, self.gold_standard, self.priors_data)
 
