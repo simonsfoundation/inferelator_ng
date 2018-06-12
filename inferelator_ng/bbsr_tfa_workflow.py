@@ -24,6 +24,8 @@ rank = int(os.environ['SLURM_PROCID'])
 
 class BBSR_TFA_Workflow(workflow.WorkflowBase):
 
+    reduce_searchspace = False
+
     def run(self):
         """
         Execute workflow, after all configuration.
@@ -36,8 +38,14 @@ class BBSR_TFA_Workflow(workflow.WorkflowBase):
         self.get_data()
         self.compute_common_data()
         self.compute_activity()
-        betas = []
-        rescaled_betas = []
+        if self.reduce_searchspace == True:
+            gs_genes = self.gold_standard.index.tolist()
+            resp_genes = self.response.index.tolist()
+            genes_reduced = list(set.intersection(set(gs_genes), set(resp_genes)))
+            self.response = self.response.loc[genes_reduced,:]
+            self.priors_data = self.priors_data.loc[genes_reduced,:]
+        self.betas = []
+        self.rescaled_betas = []
 
         for idx, bootstrap in enumerate(self.get_bootstraps()):
             print('Bootstrap {} of {}'.format((idx + 1), self.num_bootstraps))
@@ -53,10 +61,10 @@ class BBSR_TFA_Workflow(workflow.WorkflowBase):
             ownCheck = utils.ownCheck(kvs, rank, chunk=25)
             current_betas,current_rescaled_betas = self.regression_driver.run(X, Y, self.clr_matrix, self.priors_data,kvs,rank, ownCheck)
             if rank: continue
-            betas.append(current_betas)
-            rescaled_betas.append(current_rescaled_betas)
+            self.betas.append(current_betas)
+            self.rescaled_betas.append(current_rescaled_betas)
 
-        self.emit_results(betas, rescaled_betas, self.gold_standard, self.priors_data)
+        self.emit_results(self.betas, self.rescaled_betas, self.gold_standard, self.priors_data)
 
     def compute_activity(self):
         """
