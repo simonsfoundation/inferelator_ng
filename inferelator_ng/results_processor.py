@@ -38,25 +38,34 @@ class ResultsProcessor:
         #Note that the current version is blind to the sign of those betas, so the betas_sign matrix is not used. Later we might want to modify this such that only same-sign interactions count.
         return thresholded_matrix
 
-    def calculate_precision_recall(self, combined_confidences, gold_standard):
+    def get_nonempty_rows_cols(self, combined_confidences, gold_standard):
         # this code only runs for a positive gold standard, so explicitly transform it using the absolute value: 
         gold_standard = np.abs(gold_standard)
-        # filter gold standard
+        # filter gold standard to exclude columns and rows that are all 0 in the gold standard
         gold_standard_nozero = gold_standard.loc[(gold_standard!=0).any(axis=1), (gold_standard!=0).any(axis=0)]
         intersect_index = combined_confidences.index.intersection(gold_standard_nozero.index)
         intersect_cols = combined_confidences.columns.intersection(gold_standard_nozero.columns)
-        gold_standard_filtered = gold_standard_nozero.loc[intersect_index, intersect_cols]
-        combined_confidences_filtered = combined_confidences.loc[intersect_index, intersect_cols]
+        return (intersect_index, intersect_cols)
+
+    # Filter the combined confidences and the gold standard:
+    def create_filtered_gold_standard_and_confidences(self, combined_confidences, gold_standard, priors, filter_index, filter_cols):
+        # this code only runs for a positive gold standard, so explicitly transform it using the absolute value: 
+        gold_standard = np.abs(gold_standard)
+        gold_standard_filtered = gold_standard.loc[filter_index, filter_cols]
+        combined_confidences_filtered = combined_confidences.loc[filter_index, filter_cols]
         # rank from highest to lowest confidence
-        sorted_candidates = np.argsort(combined_confidences_filtered.values, axis = None)[::-1]
-        gs_values = gold_standard_filtered.values.flatten()[sorted_candidates]
+        return (combined_confidences_filtered, gold_standard_filtered)
+
+    def calculate_precision_recall(self, combined_confidences, gold_standard):
+        sorted_candidates = np.argsort(combined_confidences.values, axis = None)[::-1]
+        gs_values = gold_standard.values.flatten()[sorted_candidates]
         #the following mimicks the R function ChristophsPR
         precision = np.cumsum(gs_values).astype(float) / np.cumsum([1] * len(gs_values))
         recall = np.cumsum(gs_values).astype(float) / sum(gs_values)
         precision = np.insert(precision,0,precision[0])
         recall = np.insert(recall,0,0)
         return (recall, precision)
-
+        
     def calculate_aupr(self, recall, precision):
         #using midpoint integration to calculate the area under the curve
         d_recall = np.diff(recall)
@@ -107,7 +116,11 @@ class ResultsProcessor:
         betas_stack = self.threshold_and_summarize()
         combined_confidences.to_csv(os.path.join(output_dir, 'combined_confidences.tsv'), sep = '\t')
         betas_stack.to_csv(os.path.join(output_dir,'betas_stack.tsv'), sep = '\t')
-        (recall, precision) = self.calculate_precision_recall(combined_confidences, gold_standard)
+        priors.to_csv(os.path.join(output_dir,'priors_data.tsv'), sep = '\t')
+        
+        (filter_index, filter_cols) = self.get_nonempty_rows_cols(combined_confidences, gold_standard)
+        (combined_confidences_filtered, gold_standard_filtered) = self.create_filtered_gold_standard_and_confidences(combined_confidences, gold_standard, priors, filter_index, filter_cols)
+        (recall, precision) = self.calculate_precision_recall(combined_confidences_filtered, gold_standard_filtered)
         aupr = self.calculate_aupr(recall, precision)
         self.plot_pr_curve(recall, precision, aupr, output_dir)
         resc_betas_mean, resc_betas_median = self.mean_and_median(self.rescaled_betas)

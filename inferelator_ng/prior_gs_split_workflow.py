@@ -33,25 +33,14 @@ class PriorGoldStandardSplitWorkflowBase(workflow.WorkflowBase):
 
 class ResultsProcessorForGoldStandardSplit(results_processor.ResultsProcessor):
 
-    def calculate_precision_recall(self, combined_confidences, gold_standard, priors_data):
+    def create_filtered_gold_standard_and_confidences(self, combined_confidences, gold_standard, priors, filter_index, filter_cols):
         # this code only runs for a positive gold standard, so explicitly transform it using the absolute value: 
         gold_standard = np.abs(gold_standard)
-        # filter gold standard
-        gold_standard_nozero = gold_standard.loc[(gold_standard!=0).any(axis=1), (gold_standard!=0).any(axis=0)]
-        intersect_index = combined_confidences.index.intersection(gold_standard_nozero.index)
-        intersect_cols = combined_confidences.columns.intersection(gold_standard_nozero.columns)
-        gold_standard_filtered = gold_standard_nozero.loc[intersect_index, intersect_cols]
-        priors_data_filtered = priors_data.loc[intersect_index, intersect_cols]
-        combined_confidences_filtered = combined_confidences.loc[intersect_index, intersect_cols]
+        gold_standard_filtered = gold_standard.loc[filter_index, filter_cols]
+        priors_data_filtered = priors.loc[filter_index, filter_cols]
+        combined_confidences_filtered = combined_confidences.loc[filter_index, filter_cols]
         # removing correctly predicted interactions that were removed from GS because GS was split:
         combined_confidences_filtered = combined_confidences_filtered*(1-priors_data_filtered.abs())
         # rank from highest to lowest confidence
-        
-        sorted_candidates = np.argsort(combined_confidences_filtered.values, axis = None)[::-1]
-        gs_values = gold_standard_filtered.values.flatten()[sorted_candidates]
-        #the following mimicks the R function ChristophsPR
-        precision = np.cumsum(gs_values).astype(float) / np.cumsum([1] * len(gs_values))
-        recall = np.cumsum(gs_values).astype(float) / sum(gs_values)
-        precision = np.insert(precision,0,precision[0])
-        recall = np.insert(recall,0,0)
-        return (recall, precision)
+        return(combined_confidences_filtered, gold_standard_filtered)
+
