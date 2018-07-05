@@ -14,6 +14,7 @@ from . import utils
 from bbsr_tfa_workflow import BBSR_TFA_Workflow
 from prior_gs_split_workflow import PriorGoldStandardSplitWorkflowBase
 from prior_gs_split_workflow import ResultsProcessorForGoldStandardSplit
+import matplotlib.pyplot as plt
 
 
 # Connect to the key value store service (its location is found via an
@@ -59,7 +60,7 @@ class InfereCLaDR_Workflow(BBSR_TFA_Workflow, PriorGoldStandardSplitWorkflowBase
                     run_objs.append(run_result)
 
         self.results_by_clust_seed_tau = run_objs
-        import pdb; pdb.set_trace()
+        self.emit_results_by_cluster()
 
     def set_gene_clusters(self):
         gene_clust_index=[]
@@ -83,6 +84,10 @@ class InfereCLaDR_Workflow(BBSR_TFA_Workflow, PriorGoldStandardSplitWorkflowBase
 
     def emit_results_by_cluster(self):
         self.create_auprs_xarray()
+        self.calculate_predicted_half_lives()
+        self.output_dir = os.path.join(self.input_dir, datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S'))
+        self.predicted_half_lives.to_pandas.to_csv(os.path.join(self.output_dir, 'predicted_half-lives.tsv'), sep = '\t')
+        self.plot_aupr_vs_tau()
 
     def create_auprs_xarray(self):
         #Create a 4D DataArray with predicted AUPR as a function of 1) condition cluster, 2) gene cluster, 3) random seed, and 4) tau:
@@ -95,6 +100,35 @@ class InfereCLaDR_Workflow(BBSR_TFA_Workflow, PriorGoldStandardSplitWorkflowBase
             auprs_xarray[run_result.clust,:,:,:].loc[:,run_result.seed,run_result.tau] =  run_result.recall_precision_by_gene_clust[2]
 
         self.auprs_xarray = auprs_xarray
+
+    def calculate_predicted_half_lives(self):
+        max_taus_by_GC_CC_seed=self.auprs_xarray.coords['taus'][self.auprs_xarray.argmax('taus')[:,:,:]]*np.log(2)
+        self.predicted_half_lives = max_taus_by_GC_CC_seed.median('rand_seeds')
+
+    def plot_aupr_vs_tau(self):
+        os.makedirs(self.output_dir)
+        fig, axes = plt.subplots(nrows=len(self.auprs_xarray.coords['gene_clusts']), ncols=len(self.auprs_xarray.coords['cond_clusts']), figsize=(10,8))
+        #plt.setp(axes.flat, xlabel="RNA half-life (minutes)", ylabel="AUPR")
+        ylim_min = self.auprs_xarray.min()
+        ylim_max = self.auprs_xarray.max()
+        half_lives = self.auprs_xarray.coords['taus']*np.log(2)
+
+        for gene_idx in range(len(axes)):
+            axes[gene_idx, 0].set_ylabel("AUPR", fontsize=8)
+            for cond_idx in range(len(axes[0])):
+                axes[-1, cond_idx].set_xlabel("RNA half-life (minutes)", fontsize=8)
+                axes[gene_idx, cond_idx].set_ylim([ylim_min,ylim_max])
+                axes[gene_idx, cond_idx].tick_params(labelsize=6)
+                for seed in self.auprs_xarray.coords['rand_seeds']:
+                    auprs_profile = self.auprs_xarray[cond_idx,gene_idx,:,:].loc[seed,:]
+                    axes[gene_idx, cond_idx].plot(half_lives, auprs_profile)
+                    axes[gene_idx, cond_idx].plot(half_lives[np.argmax(auprs_profile)], np.max(auprs_profile), 'o')
+
+        fig.tight_layout()
+        fig.subplots_adjust(left=0.15, top=0.95)
+        plt.savefig(os.path.join(self.output_dir, 'auprs_panel.pdf'))
+        plt.close()
+        
 
     #define your own emit_results:
     def emit_results(self, betas, rescaled_betas, gold_standard, priors):
