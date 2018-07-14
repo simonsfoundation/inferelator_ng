@@ -7,7 +7,7 @@ from results_processor import ResultsProcessor
 import mi_R
 import bbsr_python
 import datetime
-from kvsstcp.kvsclient import KVSClient
+#from kvsstcp.kvsclient import KVSClient
 import pandas as pd
 import xarray as xr
 from . import utils
@@ -20,9 +20,9 @@ import matplotlib.pyplot as plt
 # Connect to the key value store service (its location is found via an
 # environment variable that is set when this is started vid kvsstcp.py
 # --execcmd).
-kvs = KVSClient()
+#kvs = KVSClient()
 # Find out which process we are (assumes running under SLURM).
-rank = int(os.environ['SLURM_PROCID'])
+#rank = int(os.environ['SLURM_PROCID'])
 
 
 class InfereCLaDR_Workflow(BBSR_TFA_Workflow, PriorGoldStandardSplitWorkflowBase):
@@ -86,7 +86,8 @@ class InfereCLaDR_Workflow(BBSR_TFA_Workflow, PriorGoldStandardSplitWorkflowBase
         self.create_auprs_xarray()
         self.calculate_predicted_half_lives()
         self.output_dir = os.path.join(self.input_dir, datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S'))
-        self.predicted_half_lives.to_pandas.to_csv(os.path.join(self.output_dir, 'predicted_half-lives.tsv'), sep = '\t')
+        os.makedirs(self.output_dir)
+        self.predicted_half_lives.to_pandas().to_csv(os.path.join(self.output_dir, 'predicted_half-lives.tsv'), sep = '\t')
         self.plot_aupr_vs_tau()
 
     def create_auprs_xarray(self):
@@ -106,7 +107,6 @@ class InfereCLaDR_Workflow(BBSR_TFA_Workflow, PriorGoldStandardSplitWorkflowBase
         self.predicted_half_lives = max_taus_by_GC_CC_seed.median('rand_seeds')
 
     def plot_aupr_vs_tau(self):
-        os.makedirs(self.output_dir)
         fig, axes = plt.subplots(nrows=len(self.auprs_xarray.coords['gene_clusts']), ncols=len(self.auprs_xarray.coords['cond_clusts']), figsize=(10,8))
         #plt.setp(axes.flat, xlabel="RNA half-life (minutes)", ylabel="AUPR")
         ylim_min = self.auprs_xarray.min()
