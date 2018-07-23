@@ -74,7 +74,10 @@ class PythonDRDriver:
                 off_fol = list(np.where(prev.str.contains(cond[following[off[0]]])==True)[0])
                 off_fol_delt = list(delt[off_fol])
                 following=following[:off[0]] + following[off[0]+1:] + off_fol
-                following_delt = following_delt[:off[0]] + following_delt[off[0]+1:]+[float(off_fol_delt[0]) + float(following_delt[off[0]])]
+                try:
+                    following_delt = following_delt[:off[0]] + following_delt[off[0]+1:]+[float(off_fol_delt[0]) + float(following_delt[off[0]])]
+                except IndexError:
+                    import pdb; pdb.set_trace()
                 off = list(np.where(following_delt < [delTmin])[0])
 
             n = len(following)
@@ -96,7 +99,7 @@ class PythonDRDriver:
                 des_tmp = np.concatenate((des_mat.values,exp_mat[cond[i]].values[:,np.newaxis]),axis=1)
                 des_names = list(des_mat.columns)+[this_cond]
                 des_mat=pd.DataFrame(des_tmp,index=des_mat.index,columns=des_names)
-                interp_res = (float(tau)/float(following_delt[cntr])) * (exp_mat[cond[j]].astype('float64') - exp_mat[cond[i]].astype('float64')) + exp_mat[cond[i]].astype('float64')
+                interp_res = compute_response_variable(self, tau, following_delt[cntr], exp_mat[cond[i]], exp_mat[cond[j]])
                 res_tmp = np.concatenate((res_mat.values,interp_res.values[:,np.newaxis]),axis=1)
                 res_names = list(res_mat.columns)+[this_cond] 
                 res_mat=pd.DataFrame(res_tmp,index=res_mat.index,columns=res_names)
@@ -126,3 +129,7 @@ class PythonDRDriver:
         res_mat.columns=cols_res_mat
 
         return (des_mat, res_mat)
+
+    #implement the response variable formula for the current condition
+    def compute_response_variable(self, tau, following_delta, expr_current_condition, expr_following_condition):
+        return (float(tau)/float(following_delta)) * (expr_following_condition.astype('float64') - expr_current_condition.astype('float64')) + expr_current_condition.astype('float64')
