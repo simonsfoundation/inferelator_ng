@@ -99,7 +99,7 @@ class PythonDRDriver:
                 des_tmp = np.concatenate((des_mat.values,exp_mat[cond[i]].values[:,np.newaxis]),axis=1)
                 des_names = list(des_mat.columns)+[this_cond]
                 des_mat=pd.DataFrame(des_tmp,index=des_mat.index,columns=des_names)
-                interp_res = self.compute_response_variable(self, tau, following_delt[cntr], exp_mat[cond[i]], exp_mat[cond[j]])
+                interp_res = self.compute_response_variable(tau, following_delt[cntr], exp_mat[cond[i]], exp_mat[cond[j]])
                 res_tmp = np.concatenate((res_mat.values,interp_res.values[:,np.newaxis]),axis=1)
                 res_names = list(res_mat.columns)+[this_cond] 
                 res_mat=pd.DataFrame(res_tmp,index=res_mat.index,columns=res_names)
