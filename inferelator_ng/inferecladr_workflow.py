@@ -90,6 +90,9 @@ class InfereCLaDR_Workflow(object):
                         (run_result.clust, run_result.seed, run_result.tau) = (clust, seed, tau)
                         run_result.evaluate_tau_run(bbsr_object.betas, bbsr_object.rescaled_betas, bbsr_object.gold_standard, bbsr_object.priors_data, self.gene_clust_index)
                         run_objs.append(run_result)
+                        #this is necessary to make sure (duplicate) MI matrices do not accumulate across clusters, seeds, and taus:
+                        for idx, bootstrap in enumerate(bbsr_object.get_bootstraps()):
+                            dummy = kvs.get('mi %d'%idx) #kvs.get() removes the variable
 
         if 0 == rank:
             self.results_by_clust_seed_tau = run_objs
@@ -159,6 +162,10 @@ class InfereCLaDR_Workflow(object):
         ylim_min = self.auprs_xarray.min()
         ylim_max = self.auprs_xarray.max()
         half_lives = self.auprs_xarray.coords['taus']*np.log(2)
+
+        # eliminating the empty dimension if you only have 1 gene cluster or 1 condition cluster:
+        if len(self.auprs_xarray.coords['cond_clusts']) == 1 or len(self.auprs_xarray.coords['gene_clusts']) == 1:
+            axes = axes[np.newaxis].T
 
         for gene_idx in range(len(axes)):
             axes[gene_idx, 0].set_ylabel("AUPR", fontsize=8)
