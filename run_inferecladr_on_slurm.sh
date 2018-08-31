@@ -1,11 +1,11 @@
 #!/bin/sh
 
-#SBATCH --nodes=12
-#SBATCH --tasks-per-node=5
+#SBATCH --nodes=3
+#SBATCH --tasks-per-node=20
 #SBATCH --mem=64GB
-#SBATCH --time=20:00:00
+#SBATCH --time=40:00:00
 #SBATCH --job-name=InfereCLaDR_full
-#SBATCH --output=InfereCLaDR_64GB_12_taus_2_seeds_20_bs_60tasks.out
+#SBATCH --output=InfereCLaDR_64GB_15_taus_8_seeds_30_bs_clust1_60tasks.out
 
 module purge
 module load r/intel/3.4.2 python/intel/2.7.12 bedtools/intel/2.26.0

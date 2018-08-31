@@ -11,7 +11,7 @@ workflow = BBSR_TFA_Workflow_with_Prior_GS_split()
 # Common configuration parameters
 workflow.input_dir = 'data/bsubtilis'
 workflow.num_bootstraps = 2
-workflow.delTmax = 110
-workflow.delTmin = 0
-workflow.tau = 45
+workflow.delTmax = 60000
+workflow.delTmin = 1
+workflow.tau = 20
 workflow.run() 
