@@ -4,16 +4,17 @@ Run BSubtilis Network Inference with TFA BBSR.
 
 import numpy as np
 import os
-from . import workflow
-import design_response_translation #added python design_response
-from tfa import TFA
-from results_processor import ResultsProcessor
-import mi_R
-import bbsr_python
+import sys
+from inferelator_ng.workflow import WorkflowBase
+import inferelator_ng.design_response_translation as design_response_translation
+from inferelator_ng.tfa import TFA
+from inferelator_ng.results_processor import ResultsProcessor
+import inferelator_ng.mi_R as mi_R
+import inferelator_ng.bbsr_python as bbsr_python
 import datetime
 from kvsstcp.kvsclient import KVSClient
 import pandas as pd
-from . import utils
+from inferelator_ng import utils
 
 # Connect to the key value store service (its location is found via an
 # environment variable that is set when this is started vid kvsstcp.py
@@ -22,7 +23,7 @@ kvs = KVSClient()
 # Find out which process we are (assumes running under SLURM).
 rank = int(os.environ['SLURM_PROCID'])
 
-class BBSR_TFA_Workflow(workflow.WorkflowBase):
+class BBSR_TFA_Workflow(WorkflowBase):
 
     def run(self):
         """
