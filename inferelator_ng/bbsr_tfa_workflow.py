@@ -23,7 +23,7 @@ kvs = KVSClient()
 # Find out which process we are (assumes running under SLURM).
 rank = int(os.environ['SLURM_PROCID'])
 
-class BBSR_TFA_Workflow(workflow.WorkflowBase):
+class BBSR_TFA_Workflow(WorkflowBase):
 
     def run(self):
         """
